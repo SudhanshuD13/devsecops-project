@@ -4,8 +4,14 @@ USER root
 
 # Install docker cli
 RUN apt-get update && \
-    apt-get install -y docker.io docker-compose-plugin curl && \
+    apt-get install -y docker.io && \
     rm -rf /var/lib/apt/lists/*
+
+# Install Docker Compose v2 (official binary)
+RUN mkdir -p /usr/libexec/docker/cli-plugins && \
+    curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 \
+      -o /usr/libexec/docker/cli-plugins/docker-compose && \
+    chmod +x /usr/libexec/docker/cli-plugins/docker-compose
 
 # Add jenkins to docker group (IMPORTANT)
 ARG DOCKER_GID=137
