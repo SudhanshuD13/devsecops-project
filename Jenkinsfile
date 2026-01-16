@@ -6,27 +6,27 @@ pipeline {
         skipDefaultCheckout(true)
     }
 
-    environment {
-        IMAGE_NAME = "devsecops-app"
-        IMAGE_TAG  = "1.0"
-    }
-
     stages {
 
         stage('Clean Workspace') {
-            steps { deleteDir() }
+            steps {
+                deleteDir()
+            }
         }
 
         stage('Checkout Code') {
-            steps { checkout scm }
+            steps {
+                checkout scm
+            }
         }
 
-        stage('Secret Scan - Gitleaks') {
+        stage('Secret Scan - GitLeaks') {
             steps {
                 sh '''
                   gitleaks detect \
                     --source="$WORKSPACE" \
                     --no-git \
+                    --config="$WORKSPACE/.gitleaks.toml" \
                     --redact
                 '''
             }
@@ -34,15 +34,11 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh '''
-                  docker build \
-                    -t ${IMAGE_NAME}:${IMAGE_TAG} \
-                    ./app
-                '''
+                sh 'docker build -t devsecops-app:1.0 ./app'
             }
         }
 
-        stage('Trivy Image Scan (SECURITY GATE)') {
+        stage('Trivy Image Scan (OS ONLY – SECURITY GATE)') {
             steps {
                 sh '''
                   docker run --rm \
@@ -51,20 +47,16 @@ pipeline {
                     image devsecops-app:1.0 \
                     --severity HIGH,CRITICAL \
                     --exit-code 1 \
-                    --ignore-unfixed
-		    --scanners vuln\
-		    --vuln-type os
+                    --ignore-unfixed \
+                    --scanners vuln \
+                    --vuln-type os
                 '''
             }
         }
 
         stage('Run Application') {
             steps {
-                sh '''
-                  docker compose \
-                    -f docker-compose.app.yml \
-                    up -d --remove-orphans
-                '''
+                sh 'docker compose -f docker-compose.app.yml up -d'
             }
         }
 
@@ -73,9 +65,7 @@ pipeline {
                 sh '''
                   docker run --rm \
                     -v /var/run/docker.sock:/var/run/docker.sock \
-                    anchore/syft \
-                    ${IMAGE_NAME}:${IMAGE_TAG} \
-                    -o json > sbom.json
+                    anchore/syft devsecops-app:1.0 -o json > sbom.json
                 '''
                 archiveArtifacts artifacts: 'sbom.json'
             }
@@ -84,10 +74,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ PIPELINE SUCCESS — RUNTIME IMAGE SECURE"
+            echo '✅ PIPELINE PASSED — IMAGE IS SECURE'
         }
         failure {
-            echo "❌ PIPELINE FAILED — REAL IMAGE VULNERABILITY"
+            echo '❌ PIPELINE FAILED — SECURITY GATE BLOCKED'
         }
     }
 }
