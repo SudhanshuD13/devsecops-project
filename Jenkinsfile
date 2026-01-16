@@ -2,7 +2,13 @@ pipeline {
     agent any
 
     options {
+        timestamps()
         skipDefaultCheckout(true)
+    }
+
+    environment {
+        IMAGE_NAME = "devsecops-app"
+        IMAGE_TAG  = "1.0"
     }
 
     stages {
@@ -19,52 +25,67 @@ pipeline {
             }
         }
 
-        stage('Secret Scan - GitLeaks') {
+        stage('Secret Scan - Gitleaks') {
             steps {
                 sh '''
                   gitleaks detect \
                     --source="$WORKSPACE" \
                     --no-git \
-                    --config="$WORKSPACE/.gitleaks.toml" \
                     --redact
                 '''
             }
         }
 
-        stage('Build Secure Docker Image') {
+        stage('Build Docker Image') {
             steps {
-                sh 'docker build -t devsecops-app:1.0 ./app'
+                sh '''
+                  docker build \
+                    -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                    ./app
+                '''
             }
         }
-        stage('Trivy Image Scan') {
-    steps {
-        sh '''
-          docker run --rm \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            aquasec/trivy:latest \
-            image devsecops-app:1.0 \
-            --severity HIGH,CRITICAL \
-            --exit-code 1
-        '''
-    }
-}
-        
+
+        stage('Trivy Image Scan (SECURITY GATE)') {
+            steps {
+                sh '''
+                  trivy image ${IMAGE_NAME}:${IMAGE_TAG} \
+                    --severity HIGH,CRITICAL \
+                    --exit-code 1
+                '''
+            }
+        }
+
         stage('Run Application') {
             steps {
-                sh 'docker compose -f docker-compose.app.yml up -d'
+                sh '''
+                  docker compose \
+                    -f docker-compose.app.yml \
+                    up -d --remove-orphans
+                '''
             }
         }
-	stage('Generate SBOM') {
-	    steps {
-       		 sh '''
-         	  docker run --rm \
-           	   -v /var/run/docker.sock:/var/run/docker.sock \
-           	   anchore/syft devsecops-app:1.0 -o json > sbom.json
-        	 '''
-       		 archiveArtifacts artifacts: 'sbom.json'
-    	    }
-	}
 
+        stage('Generate SBOM') {
+            steps {
+                sh '''
+                  docker run --rm \
+                    -v /var/run/docker.sock:/var/run/docker.sock \
+                    anchore/syft \
+                    ${IMAGE_NAME}:${IMAGE_TAG} \
+                    -o json > sbom.json
+                '''
+                archiveArtifacts artifacts: 'sbom.json', fingerprint: true
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ PIPELINE SUCCESS — APP SECURE & RUNNING"
+        }
+        failure {
+            echo "❌ PIPELINE FAILED — CHECK SECURITY OR BUILD ERRORS"
+        }
     }
 }
-
