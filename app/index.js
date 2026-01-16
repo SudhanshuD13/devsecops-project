@@ -4,6 +4,8 @@ const { Pool } = require("pg");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const TEST_SECRET = "AKIAFAKESECRET123456";
+
 // DB config from ENV (IMPORTANT)
 const pool = new Pool({
   host: process.env.DB_HOST,

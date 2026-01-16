@@ -9,7 +9,18 @@ pipeline {
                 checkout scm
             }
         }
+	 stage('Secret Scan - GitLeaks') {
 
+            steps {
+       		 echo 'Scanning repository for secrets using GitLeaks'
+       		 sh '''
+       		 docker run --rm \
+         	 -v "$PWD:/repo" \
+         	 zricethezav/gitleaks:latest \
+         	 detect --source=/repo --no-git --redact
+       		 '''
+   		 }
+	}
         stage('Build Docker Image') {
             steps {
                 echo 'Building application Docker image'
