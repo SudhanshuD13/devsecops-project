@@ -9,7 +9,8 @@ RUN apt-get update && \
 
 # Add jenkins to docker group (IMPORTANT)
 ARG DOCKER_GID=137
-RUN groupadd -g ${DOCKER_GID} docker || true && \
+
+RUN groupmod -g ${DOCKER_GID} docker && \
     usermod -aG docker jenkins
 
 # Install gitleaks
