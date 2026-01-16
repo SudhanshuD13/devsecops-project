@@ -31,7 +31,39 @@ pipeline {
                 '''
             }
         }
+        
+        stage('SAST - SonarQube') {
+	    environment {
+        	SONAR_TOKEN = credentials('sonar-token')
+	    } 
+   	    steps {
+       		 sh '''
+         	  docker run --rm \
+           	   -e SONAR_HOST_URL=http://host.docker.internal:9000 \
+           	   -e SONAR_LOGIN=$SONAR_TOKEN \
+           	   -v "$WORKSPACE:/usr/src" \
+           	   sonarsource/sonar-scanner-cli \
+           	   -Dsonar.projectKey=devsecops-project \
+           	   -Dsonar.sources=.
+       		 '''
+   	     }
+	}
+        
+        stage('Quality Gate') {
+    steps {
+        sleep 10
+        sh '''
+          STATUS=$(curl -s -u $SONAR_TOKEN: \
+          "http://host.docker.internal:9000/api/qualitygates/project_status?projectKey=devsecops-project" \
+          | jq -r '.projectStatus.status')
 
+          if [ "$STATUS" != "OK" ]; then
+            echo "❌ Quality Gate Failed"
+            exit 1
+          fi
+        '''
+    }
+}
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t devsecops-app:1.0 ./app'
