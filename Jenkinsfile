@@ -1,7 +1,18 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
     stages {
+
+        stage('Clean Workspace') {
+            steps {
+                echo 'Cleaning Jenkins workspace'
+                deleteDir()
+            }
+        }
 
         stage('Checkout Code') {
             steps {
@@ -9,30 +20,34 @@ pipeline {
                 checkout scm
             }
         }
-	 stage('Secret Scan - GitLeaks') {
 
+        stage('Secret Scan - GitLeaks') {
             steps {
-       		 echo 'Scanning repository for secrets using GitLeaks'
-       		 sh '''
-       		 docker run --rm \
-         	 -v "$WORKSPACE:/repo" \
-         	 zricethezav/gitleaks:latest \
-         	 detect --source=/repo --no-git --config=/devsecops-project/.gitleaks.toml --redact
-       		 '''
-   		 }
-	}
+                echo 'Scanning repository for secrets using GitLeaks'
+                sh '''
+                docker run --rm \
+                  -v "$WORKSPACE:/repo" \
+                  zricethezav/gitleaks:latest \
+                  detect \
+                  --source=/repo \
+                  --no-git \
+                  --config=/repo/.gitleaks.toml \
+                  --redact
+                '''
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
-                echo 'Building application Docker image'
                 sh 'docker build -t devsecops-app:1.0 ./app'
             }
         }
 
         stage('Run Application') {
             steps {
-                echo 'Running application using docker-compose'
                 sh 'docker-compose -f docker-compose.app.yml up -d'
             }
         }
     }
 }
+
