@@ -25,13 +25,10 @@ pipeline {
             steps {
                 echo 'Scanning repository for secrets using GitLeaks'
                 sh '''
-                docker run --rm \
-                  -v "$WORKSPACE:/repo" \
-                  zricethezav/gitleaks:latest \
-                  detect \
-                  --source=/repo \
+                gitleaks detect \
+                  --source="$WORKSPACE" \
                   --no-git \
-                  --config=/repo/.gitleaks.toml \
+                  --config="$WORKSPACE"/.gitleaks.toml \
                   --redact
                 '''
             }

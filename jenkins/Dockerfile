@@ -1,16 +1,8 @@
 FROM jenkins/jenkins:lts
 
 USER root
-
-# Install Docker + docker-compose
-RUN apt-get update && \
-    apt-get install -y docker.io docker-compose && \
-    apt-get clean
-
-# Match docker group GID with host
-ARG DOCKER_GID=137
-RUN groupmod -g ${DOCKER_GID} docker && \
-    usermod -aG docker jenkins
+RUN curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz \
+    | tar -xz -C /usr/local/bin gitleaks
 
 USER jenkins
 
