@@ -1,0 +1,8 @@
+title = "DevSecOps custom rules"
+
+[[rules]]
+id = "hardcoded-password-js"
+description = "Hardcoded password in JS files"
+regex = '''(?i)(password|passwd|pwd)\s*=\s*["'][^"']{6,}["']'''
+path = '''(?i)\.js$'''
+tags = ["password", "hardcoded"]
