@@ -20,7 +20,7 @@ pipeline {
         stage('Run Application') {
             steps {
                 echo 'Running application using docker-compose'
-                sh 'docker compose up -d'
+                sh 'docker-compose -f docker-compose.app.yml up -d'
             }
         }
     }
