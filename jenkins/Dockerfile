@@ -2,8 +2,15 @@ FROM jenkins/jenkins:lts
 
 USER root
 
-RUN apt-get update && apt-get install -y docker.io && apt-get clean
+# Install Docker + docker-compose
+RUN apt-get update && \
+    apt-get install -y docker.io docker-compose && \
+    apt-get clean
 
-RUN usermod -aG docker jenkins
+# Match docker group GID with host
+ARG DOCKER_GID=137
+RUN groupmod -g ${DOCKER_GID} docker && \
+    usermod -aG docker jenkins
 
 USER jenkins
+
