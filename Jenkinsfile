@@ -17,7 +17,7 @@ pipeline {
        		 docker run --rm \
          	 -v "$PWD:/repo" \
          	 zricethezav/gitleaks:latest \
-         	 detect --source=/repo --redact --verbose
+         	 detect --source=/repo --no-git --redact --verbose
        		 '''
    		 }
 	}
