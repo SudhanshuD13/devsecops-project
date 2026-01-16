@@ -17,7 +17,7 @@ pipeline {
        		 docker run --rm \
          	 -v "$WORKSPACE:/repo" \
          	 zricethezav/gitleaks:latest \
-         	 detect --source=/repo --no-git --config=/repo/.gitleaks.toml --redact
+         	 detect --source=/repo --no-git --config=/devsecops-project/.gitleaks.toml --redact
        		 '''
    		 }
 	}
