@@ -15,7 +15,7 @@ pipeline {
        		 echo 'Scanning repository for secrets using GitLeaks'
        		 sh '''
        		 docker run --rm \
-         	 -v "$PWD:/repo" \
+         	 -v "$WORKSPACE:/repo" \
          	 zricethezav/gitleaks:latest \
          	 detect --source=/repo --no-git --redact --verbose --log-level=debug
        		 '''
