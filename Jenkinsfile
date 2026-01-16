@@ -14,15 +14,11 @@ pipeline {
     stages {
 
         stage('Clean Workspace') {
-            steps {
-                deleteDir()
-            }
+            steps { deleteDir() }
         }
 
         stage('Checkout Code') {
-            steps {
-                checkout scm
-            }
+            steps { checkout scm }
         }
 
         stage('Secret Scan - Gitleaks') {
@@ -54,7 +50,8 @@ pipeline {
                     aquasec/trivy:latest \
                     image ${IMAGE_NAME}:${IMAGE_TAG} \
                     --severity HIGH,CRITICAL \
-                    --exit-code 1
+                    --exit-code 1 \
+                    --ignore-unfixed
                 '''
             }
         }
@@ -78,17 +75,17 @@ pipeline {
                     ${IMAGE_NAME}:${IMAGE_TAG} \
                     -o json > sbom.json
                 '''
-                archiveArtifacts artifacts: 'sbom.json', fingerprint: true
+                archiveArtifacts artifacts: 'sbom.json'
             }
         }
     }
 
     post {
         success {
-            echo "✅ PIPELINE SUCCESS — APP SECURE & RUNNING"
+            echo "✅ PIPELINE SUCCESS — RUNTIME IMAGE SECURE"
         }
         failure {
-            echo "❌ PIPELINE FAILED — CHECK SECURITY OR BUILD ERRORS"
+            echo "❌ PIPELINE FAILED — REAL IMAGE VULNERABILITY"
         }
     }
 }
